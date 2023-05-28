@@ -1,10 +1,10 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const User = require("../models/userModel");
+const User = require("../models/user-model");
 
 const signup = async (req, res) => {
   try {
-    const { login, password } = req.body;
+    const { login, password, adminName } = req.body;
 
     const user = await User.findOne({ login });
 
@@ -14,7 +14,7 @@ const signup = async (req, res) => {
 
     const hashedPsw = await bcrypt.hash(password, 12);
 
-    let newUser = await User({ login, password: hashedPsw });
+    let newUser = await User({ login, password: hashedPsw, adminName });
 
     await newUser.save();
 

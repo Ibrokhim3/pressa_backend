@@ -1,16 +1,22 @@
 const express = require("express");
 const dotenv = require("dotenv");
 const cors = require("cors");
-const connectToDb = require("./config/connectToDb");
+const connectToDb = require("./config/connect-to-db");
 const authRouter = require("./routes/auth-router");
+const postRouter = require("./routes/post-router");
+const upload = require("express-fileupload");
+const path = require("path");
 
 const app = express();
 
 app.use(express.json());
 app.use(cors());
+app.use(upload());
 dotenv.config();
+app.use(express.static(path.join(process.cwd(), "./assets")));
 
 app.use("/pressa", authRouter);
+app.use("/pressa", postRouter);
 
 connectToDb();
 
