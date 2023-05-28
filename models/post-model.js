@@ -57,8 +57,13 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
+  isModerated: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const Post = mongoose.model("Post", postSchema);
+const Posts = mongoose.model("posts", postSchema);
+const ActivePosts = mongoose.model("active-posts", postSchema);
 
-module.exports = Post;
+module.exports = { Posts, ActivePosts };

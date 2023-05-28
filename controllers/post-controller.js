@@ -1,4 +1,4 @@
-const Post = require("../models/post-model");
+const { Posts, ActivePosts } = require("../models/post-model");
 const cloudinary = require("../config/cloudinary-config");
 const fs = require("fs");
 const path = require("path");
@@ -71,7 +71,7 @@ module.exports = {
         console.log("File deleted!");
       });
 
-      const newPost = await Post({
+      const newPost = await Posts({
         postDate,
         postTime,
         postDir,
@@ -95,17 +95,14 @@ module.exports = {
       return console.log(error.message);
     }
   },
-  UPLOAD_TEST: async (req, res) => {},
-  UPDATE_USER_VIDEOS: async (req, res) => {
+  POST_MODERATION: async (req, res) => {
+    const { submit, cancel } = req.body;
+  },
+  GET_MODERATING_POSTS: async (req, res) => {
     try {
-      const { id, video_title } = req.body;
+      const posts = await Posts.find({ isModerated: false });
 
-      const { id: id2, video_title: video_title2 } = videoCtr.GET_VIDEOS;
-      await pool.query(`UPDATE videos SET video_title=$1 where id=$2`, [
-        video_title,
-        id,
-      ]);
-      res.status(200).send({ msg: "Video updated successfully", id2 });
+      return res.status(200).json(posts);
     } catch (error) {
       return console.log(error.message);
     }
