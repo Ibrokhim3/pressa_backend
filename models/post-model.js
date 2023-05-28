@@ -61,9 +61,14 @@ const postSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
+  isDeleted: {
+    type: Boolean,
+    default: false,
+  },
 });
 
-const Posts = mongoose.model("posts", postSchema);
-const ActivePosts = mongoose.model("active-posts", postSchema);
 
-module.exports = { Posts, ActivePosts };
+const Posts = mongoose.model("posts", postSchema);
+
+
+module.exports = Posts ;

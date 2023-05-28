@@ -1,10 +1,34 @@
-const { Posts, ActivePosts } = require("../models/post-model");
+const Posts = require("../models/post-model");
 const cloudinary = require("../config/cloudinary-config");
 const fs = require("fs");
 const path = require("path");
 const { v4 } = require("uuid");
 
 module.exports = {
+  GET_MODERATING_POSTS: async (req, res) => {
+    try {
+      const posts = await Posts.find({ isModerated: false });
+      return res.status(200).json(posts);
+    } catch (error) {
+      return console.log(error.message);
+    }
+  },
+  GET_ACTIVE_POSTS: async (req, res) => {
+    try {
+      const posts = await Posts.find({ isModerated: true });
+      return res.status(200).json(posts);
+    } catch (error) {
+      return console.log(error.message);
+    }
+  },
+  GET_DELETED_POSTS: async (req, res) => {
+    try {
+      const posts = await Posts.find({ isDeleted: true });
+      return res.status(200).json(posts);
+    } catch (error) {
+      return console.log(error.message);
+    }
+  },
   ADD_POST: async (req, res) => {
     try {
       const {
@@ -56,6 +80,9 @@ module.exports = {
           "assets/" + filename,
           options
         );
+        if (!result) {
+          return res.status(500).json("Error. Check the connection");
+        }
         // console.log(result);
         // return result.public_id;
       } catch (error) {
@@ -95,14 +122,23 @@ module.exports = {
       return console.log(error.message);
     }
   },
-  POST_MODERATION: async (req, res) => {
-    const { submit, cancel } = req.body;
-  },
-  GET_MODERATING_POSTS: async (req, res) => {
+  MODERATE_POSTS: async (req, res) => {
     try {
-      const posts = await Posts.find({ isModerated: false });
+      const { submit, cancel, id } = req.body;
+      if (submit) {
+        await Posts.findByIdAndUpdate(id, {
+          isModerated: true,
+        });
 
-      return res.status(200).json(posts);
+        return res.status(200).json("Post is activated successfully");
+      }
+      if (cancel) {
+        await Posts.findByIdAndUpdate(id, {
+          isDeleted: true,
+        });
+
+        return res.status(200).json("Post was rejected");
+      }
     } catch (error) {
       return console.log(error.message);
     }

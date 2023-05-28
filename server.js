@@ -20,7 +20,7 @@ app.use("/pressa", postRouter);
 
 connectToDb();
 
-const PORT = process.env.PORT || 2001;
+const PORT = process.env.PORT || 2002;
 
 app.listen(PORT, () => {
   console.log(`Server ${PORT} is running`);
