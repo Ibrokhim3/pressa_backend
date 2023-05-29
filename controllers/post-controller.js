@@ -7,7 +7,17 @@ const { v4 } = require("uuid");
 module.exports = {
   GET_MODERATING_POSTS: async (req, res) => {
     try {
-      const posts = await Posts.find({ isModerated: false });
+      const search = req.query.search || "";
+
+      const posts = await Posts.find({
+        $and: [
+          {
+            isModerated: false,
+            isRejected: false,
+            postTitle: { $regex: search, $options: "i" },
+          },
+        ],
+      });
       return res.status(200).json(posts);
     } catch (error) {
       console.log(error.message);
@@ -15,14 +25,14 @@ module.exports = {
     }
   },
   GET_ACTIVE_POSTS: async (req, res) => {
-    let { postsNum } = req.body;
-    const page = parseInt(req.query.page) - 1 || 0;
     const limit = parseInt(req.query.limit) || 9;
     const search = req.query.search || "";
-    let sort = req.query.sort || "";
 
     try {
-      const posts = await Posts.find({ isModerated: true, postTitle: { $regex: search, $options: "i" } }).limit(limit);
+      const posts = await Posts.find({
+        isModerated: true,
+        postTitle: { $regex: search, $options: "i" },
+      }).limit(limit);
       return res.status(200).json(posts);
     } catch (error) {
       return console.log(error.message);
@@ -32,20 +42,44 @@ module.exports = {
     try {
       // let { postsNum } = req.body;
       // const page = parseInt(req.query.page) - 1 || 0;
-      // const limit = parseInt(req.query.limit) || 9;
-      const search = req.query.search || "";
+      const limit = parseInt(req.query.limit) || 9;
+      let date = req.query.date || "";
+      let category = req.query.category || "All";
+      let type = req.query.type || "All";
+      let name = req.query.name || "All";
+      // const search_by_category_in = req.query.search_by_category_in || "";
+
       // let sort = req.query.sort || "";
+
+      const categoryOptions = [
+        "IT",
+        "Dizayn",
+        "SMM",
+        "English",
+        "Robototexnika",
+        "Motion-dizayn",
+      ];
+
+      category === "All"
+        ? (category = [...categoryOptions])
+        : (category = req.query.category.split(","));
 
       const posts = await Posts.find({
         isModerated: true,
-        postTitle: { $regex: search, $options: "i" },
+        // postDate: { $regex: search_by_date, $options: "i" },
+        // postDir: { $regex: search_by_category, $options: "i" },
+        // postInnerDir: { $regex: search_by_category_in, $options: "i" },
+        // postType: { $regex: search_by_type, $options: "i" },
+        // speakerName: { $regex: search_by_name, $options: "i" },
       })
-        .where("postTitle")
-        .limit(9);
+        .where("postDir")
+        .in([...category])
+        .limit(limit);
 
       return res.status(200).json(posts);
     } catch (error) {
-      return console.log(error.message);
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
   GET_ONE_ACTIVE_POST: async (req, res) => {
@@ -57,9 +91,9 @@ module.exports = {
       return console.log(error.message);
     }
   },
-  GET_DELETED_POSTS: async (req, res) => {
+  GET_REJECTED_POSTS: async (req, res) => {
     try {
-      const posts = await Posts.find({ isDeleted: true });
+      const posts = await Posts.find({ isRejected: true });
       return res.status(200).json(posts);
     } catch (error) {
       return console.log(error.message);
@@ -160,7 +194,7 @@ module.exports = {
   },
   MODERATE_POSTS: async (req, res) => {
     try {
-      const { submit, cancel, id } = req.body;
+      const { submit, reject, id } = req.body;
       if (submit) {
         await Posts.findByIdAndUpdate(id, {
           isModerated: true,
@@ -168,9 +202,9 @@ module.exports = {
 
         return res.status(200).json("Post is activated successfully");
       }
-      if (cancel) {
+      if (reject) {
         await Posts.findByIdAndUpdate(id, {
-          isDeleted: true,
+          isRejected: true,
         });
 
         return res.status(200).json("Post was rejected");

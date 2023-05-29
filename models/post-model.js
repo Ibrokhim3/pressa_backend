@@ -61,14 +61,12 @@ const postSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  isDeleted: {
+  isRejected: {
     type: Boolean,
     default: false,
   },
 });
 
-
 const Posts = mongoose.model("posts", postSchema);
 
-
-module.exports = Posts ;
+module.exports = Posts;
