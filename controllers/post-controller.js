@@ -9,6 +9,16 @@ module.exports = {
     try {
       const search = req.query.search || "";
 
+      let sort = req.query.sort || "asc";
+      // req.query.sort ? (sort = req.query.sort.split(",")) : (sort = [sort]);
+
+      // let sortBy = {};
+      // if (sort[1]) {
+      //   sortBy[sort[0]] = sort[1];
+      // } else {
+      //   sortBy[sort[0]] = "asc";
+      // }
+
       const posts = await Posts.find({
         $and: [
           {
@@ -17,8 +27,24 @@ module.exports = {
             postTitle: { $regex: search, $options: "i" },
           },
         ],
-      });
+      }).sort({ postDate: sort });
+
       return res.status(200).json(posts);
+    } catch (error) {
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
+    }
+  },
+  SORT_MODERATING_POST: async (req, res) => {
+    try {
+      // let sort = req.query.sort || "Eng so’ngilari";
+      // req.query.sort ? (sort = req.query.sort.split(",")) : (sort = [sort]);
+      // let sortBy = {};
+      // if (sort[1]) {
+      //   sortBy[sort[0]] = sort[1];
+      // } else {
+      //   sortBy[sort[0]] = "asc";
+      // }
     } catch (error) {
       console.log(error.message);
       res.status(500).json({ error: true, message: "Internal server error" });
@@ -40,16 +66,12 @@ module.exports = {
   },
   SEARCH_ACTIVE_POSTS: async (req, res) => {
     try {
-      // let { postsNum } = req.body;
       // const page = parseInt(req.query.page) - 1 || 0;
       const limit = parseInt(req.query.limit) || 9;
-      let date = req.query.date || "";
+      let date = req.query.date || "2023-05-31";
       let category = req.query.category || "All";
-      let type = req.query.type || "All";
+      let type = req.query.type || "offline";
       let name = req.query.name || "All";
-      // const search_by_category_in = req.query.search_by_category_in || "";
-
-      // let sort = req.query.sort || "";
 
       const categoryOptions = [
         "IT",
@@ -60,21 +82,31 @@ module.exports = {
         "Motion-dizayn",
       ];
 
+      const nameOptions = [
+        "Alisher Isaev",
+        "Sarvar Ikromov",
+        "Sherzod Polatov",
+      ];
+
+      name === "All"
+        ? (name = [...nameOptions])
+        : (name = req.query.name.split(","));
+
       category === "All"
         ? (category = [...categoryOptions])
         : (category = req.query.category.split(","));
 
       const posts = await Posts.find({
-        isModerated: true,
-        // postDate: { $regex: search_by_date, $options: "i" },
-        // postDir: { $regex: search_by_category, $options: "i" },
-        // postInnerDir: { $regex: search_by_category_in, $options: "i" },
-        // postType: { $regex: search_by_type, $options: "i" },
-        // speakerName: { $regex: search_by_name, $options: "i" },
-      })
-        .where("postDir")
-        .in([...category])
-        .limit(limit);
+        $and: [
+          {
+            isModerated: true,
+            postDate: date,
+            postType: type,
+            postDir: [...category],
+            speakerName: [...name],
+          },
+        ],
+      }).limit(limit);
 
       return res.status(200).json(posts);
     } catch (error) {
