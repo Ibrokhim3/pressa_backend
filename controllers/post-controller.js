@@ -10,13 +10,49 @@ module.exports = {
       const posts = await Posts.find({ isModerated: false });
       return res.status(200).json(posts);
     } catch (error) {
-      return console.log(error.message);
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
   GET_ACTIVE_POSTS: async (req, res) => {
+    let { postsNum } = req.body;
+    const page = parseInt(req.query.page) - 1 || 0;
+    const limit = parseInt(req.query.limit) || 9;
+    const search = req.query.search || "";
+    let sort = req.query.sort || "";
+
     try {
-      const posts = await Posts.find({ isModerated: true });
+      const posts = await Posts.find({ isModerated: true, postTitle: { $regex: search, $options: "i" } }).limit(limit);
       return res.status(200).json(posts);
+    } catch (error) {
+      return console.log(error.message);
+    }
+  },
+  SEARCH_ACTIVE_POSTS: async (req, res) => {
+    try {
+      // let { postsNum } = req.body;
+      // const page = parseInt(req.query.page) - 1 || 0;
+      // const limit = parseInt(req.query.limit) || 9;
+      const search = req.query.search || "";
+      // let sort = req.query.sort || "";
+
+      const posts = await Posts.find({
+        isModerated: true,
+        postTitle: { $regex: search, $options: "i" },
+      })
+        .where("postTitle")
+        .limit(9);
+
+      return res.status(200).json(posts);
+    } catch (error) {
+      return console.log(error.message);
+    }
+  },
+  GET_ONE_ACTIVE_POST: async (req, res) => {
+    try {
+      const { id } = req.params;
+      const post = await Posts.findOne({ _id: id, isModerated: true });
+      return res.status(200).json(post);
     } catch (error) {
       return console.log(error.message);
     }
