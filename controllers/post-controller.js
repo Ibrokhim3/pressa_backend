@@ -1,8 +1,10 @@
 const Posts = require("../models/post-model");
+const Category = require("../models/category-model");
 const cloudinary = require("../config/cloudinary-config");
 const fs = require("fs");
 const path = require("path");
 const { v4 } = require("uuid");
+const Name = require("../models/name-model");
 
 module.exports = {
   GET_MODERATING_POSTS: async (req, res) => {
@@ -10,14 +12,6 @@ module.exports = {
       const search = req.query.search || "";
 
       let sort = req.query.sort || "asc";
-      // req.query.sort ? (sort = req.query.sort.split(",")) : (sort = [sort]);
-
-      // let sortBy = {};
-      // if (sort[1]) {
-      //   sortBy[sort[0]] = sort[1];
-      // } else {
-      //   sortBy[sort[0]] = "asc";
-      // }
 
       const posts = await Posts.find({
         $and: [
@@ -35,58 +29,57 @@ module.exports = {
       res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
-  SORT_MODERATING_POST: async (req, res) => {
-    try {
-      // let sort = req.query.sort || "Eng so’ngilari";
-      // req.query.sort ? (sort = req.query.sort.split(",")) : (sort = [sort]);
-      // let sortBy = {};
-      // if (sort[1]) {
-      //   sortBy[sort[0]] = sort[1];
-      // } else {
-      //   sortBy[sort[0]] = "asc";
-      // }
-    } catch (error) {
-      console.log(error.message);
-      res.status(500).json({ error: true, message: "Internal server error" });
-    }
-  },
   GET_ACTIVE_POSTS: async (req, res) => {
     const limit = parseInt(req.query.limit) || 9;
     const search = req.query.search || "";
+    let category = req.query.category || "All";
+    let date = req.query.date || "";
+    let sort = req.query.sort || "asc";
+
+    const categoryOptions = await Category.distinct("category");
+
+    category === "All"
+      ? (category = [...categoryOptions])
+      : (category = req.query.category.split(","));
 
     try {
       const posts = await Posts.find({
         isModerated: true,
         postTitle: { $regex: search, $options: "i" },
-      }).limit(limit);
+        postDate: { $regex: date },
+        postDir: [...category],
+      })
+        .sort({ postDate: sort })
+        .limit(limit);
       return res.status(200).json(posts);
     } catch (error) {
-      return console.log(error.message);
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
+    }
+  },
+  GET_REJECTED_POSTS: async (req, res) => {
+    try {
+      let sort = req.query.sort || "asc";
+      const posts = await Posts.find({ isRejected: true }).sort({
+        postDate: sort,
+      });
+      return res.status(200).json(posts);
+    } catch (error) {
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
   SEARCH_ACTIVE_POSTS: async (req, res) => {
     try {
       // const page = parseInt(req.query.page) - 1 || 0;
       const limit = parseInt(req.query.limit) || 9;
-      let date = req.query.date || "2023-05-31";
+      let date = req.query.date || "";
       let category = req.query.category || "All";
       let type = req.query.type || "offline";
       let name = req.query.name || "All";
 
-      const categoryOptions = [
-        "IT",
-        "Dizayn",
-        "SMM",
-        "English",
-        "Robototexnika",
-        "Motion-dizayn",
-      ];
-
-      const nameOptions = [
-        "Alisher Isaev",
-        "Sarvar Ikromov",
-        "Sherzod Polatov",
-      ];
+      const categoryOptions = await Category.find();
+      const nameOptions = await Name.find();
 
       name === "All"
         ? (name = [...nameOptions])
@@ -120,15 +113,17 @@ module.exports = {
       const post = await Posts.findOne({ _id: id, isModerated: true });
       return res.status(200).json(post);
     } catch (error) {
-      return console.log(error.message);
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
-  GET_REJECTED_POSTS: async (req, res) => {
+  GET_MAIN_CATEGORIES: async (req, res) => {
     try {
-      const posts = await Posts.find({ isRejected: true });
-      return res.status(200).json(posts);
+      const categories = await Category.find();
+
+      return res.status(200).json(categories);
     } catch (error) {
-      return console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
   ADD_POST: async (req, res) => {
@@ -183,15 +178,16 @@ module.exports = {
           options
         );
         if (!result) {
-          return res.status(500).json("Error. Check the connection");
+          return res.status(500).json("Internal server error");
         }
         // console.log(result);
         // return result.public_id;
       } catch (error) {
-        console.error(error);
+        // console.log(error.message);
+        res.status(500).json({ error: true, message: "Internal server error" });
       }
 
-      const postImgUrl = result.secure_url;
+      const postImgUrl = result?.secure_url;
 
       //deleting the file from folder
 
@@ -221,38 +217,32 @@ module.exports = {
 
       return res.status(201).json("Post sent to the moderation");
     } catch (error) {
-      return console.log(error.message);
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
   MODERATE_POSTS: async (req, res) => {
     try {
-      const { submit, reject, id } = req.body;
-      if (submit) {
+      const { type, id } = req.body;
+      const search = req.query.search || "";
+
+      if (type === "true") {
         await Posts.findByIdAndUpdate(id, {
           isModerated: true,
+          search: { $regex: search, option: "i" },
         });
 
-        return res.status(200).json("Post is activated successfully");
+        return res.status(201).json("Post is activated successfully");
       }
-      if (reject) {
-        await Posts.findByIdAndUpdate(id, {
-          isRejected: true,
-        });
 
-        return res.status(200).json("Post was rejected");
-      }
+      await Posts.findByIdAndUpdate(id, {
+        isRejected: true,
+      });
+
+      return res.status(201).json("Post was rejected");
     } catch (error) {
-      return console.log(error.message);
-    }
-  },
-  DELETE_USER_VIDEOS: async (req, res) => {
-    try {
-      const { id } = req.body;
-      const { id: id2 } = videoCtr.GET_VIDEOS;
-      await pool.query(`DELETE from videos where id=$1`, [id]);
-      res.status(200).send({ msg: "Video deleted successfully", id2 });
-    } catch (error) {
-      return console.log(error.message);
+      console.log(error.message);
+      res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
 };

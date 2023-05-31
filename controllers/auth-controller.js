@@ -20,7 +20,8 @@ const SIGNUP = async (req, res) => {
 
     return res.status(201).json("Signup");
   } catch (error) {
-    return console.log(error.message);
+    console.log(error.message);
+    res.status(500).json({ error: true, message: "Internal server error" });
   }
 };
 
@@ -29,11 +30,11 @@ const LOGIN = async (req, res) => {
     const { login, password } = req.body;
 
     const user = await User.findOne({ login });
-    if (!user) return res.status(404).json({ msg: "User not found" });
+    if (!user) return res.status(404).json("User not found");
 
     const comparePsw = await bcrypt.compare(password, user.password);
 
-    if (!comparePsw) return res.status(401).json({ msg: "Invalid password!" });
+    if (!comparePsw) return res.status(401).json("Invalid password!");
 
     const token = jwt.sign({ user_id: user._id }, process.env.SECRET_KEY, {
       expiresIn: process.env.JWT_TIME,
@@ -41,7 +42,8 @@ const LOGIN = async (req, res) => {
 
     res.status(201).json({ token, msg: "You're logged in" });
   } catch (error) {
-    return console.log(error.message);
+    console.log(error.message);
+    res.status(500).json({ error: true, message: "Internal server error" });
   }
 };
 
