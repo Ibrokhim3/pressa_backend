@@ -3,7 +3,7 @@ const mongoose = require("mongoose");
 const connectDb = async () => {
   try {
     mongoose
-      .connect("mongodb://localhost:27017/pressa", {
+      .connect(process.env.MONGO_PORT, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
       })
