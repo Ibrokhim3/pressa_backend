@@ -17,9 +17,9 @@ app.use(express.static(path.join(process.cwd(), "./assets")));
 app.use("/pressa", authRouter);
 app.use("/pressa", postRouter);
 
-const PORT = process.env.PORT || 2002;
-
 connectToDb();
+
+const PORT = process.env.PORT || 2002;
 
 app.listen(PORT, () => {
   console.log(`Server ${PORT} is running`);

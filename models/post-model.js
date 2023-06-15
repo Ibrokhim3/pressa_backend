@@ -21,13 +21,20 @@ const postSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  postLink: {
+  postAuthor: {
     type: String,
     required: true,
+  },
+  postLink: {
+    type: String,
   },
   postImgUrl: {
     type: String,
     required: true,
+  },
+  firmTitle: {
+    type: String,
+    // required: true,
   },
   speakerName: {
     type: String,
@@ -43,7 +50,7 @@ const postSchema = new mongoose.Schema({
   },
   speakerTelNum2: {
     type: String,
-    required: true,
+    required: false,
   },
   postTitle: {
     type: String,

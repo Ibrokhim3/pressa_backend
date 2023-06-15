@@ -5,6 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const { v4 } = require("uuid");
 const Name = require("../models/name-model");
+const Comment = require("../models/comment-model");
 
 module.exports = {
   GET_MODERATING_POSTS: async (req, res) => {
@@ -32,25 +33,24 @@ module.exports = {
   GET_ACTIVE_POSTS: async (req, res) => {
     const limit = parseInt(req.query.limit) || 9;
     const search = req.query.search || "";
-    let category = req.query.category || "All";
-    let date = req.query.date || "";
-    let sort = req.query.sort || "asc";
+    // let category = req.query.category || "All";
+    // let date = req.query.date || "";
+    // let sort = req.query.sort || "asc";
 
-    const categoryOptions = await Category.distinct("category");
+    // const categoryOptions = await Category.distinct("category");
 
-    category === "All"
-      ? (category = [...categoryOptions])
-      : (category = req.query.category.split(","));
+    // category === "All"
+    //   ? (category = [...categoryOptions])
+    //   : (category = req.query.category.split(","));
 
     try {
       const posts = await Posts.find({
         isModerated: true,
         postTitle: { $regex: search, $options: "i" },
-        postDate: { $regex: date },
-        postDir: [...category],
-      })
-        .sort({ postDate: sort })
-        .limit(limit);
+        // postDate: { $regex: date },
+        // postDir: [...category],
+      }).limit(limit);
+      // .sort({ postDate: sort })
       return res.status(200).json(posts);
     } catch (error) {
       console.log(error.message);
@@ -69,39 +69,88 @@ module.exports = {
       res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
-  SEARCH_ACTIVE_POSTS: async (req, res) => {
+  FILTER_ACTIVE_POSTS: async (req, res) => {
     try {
       // const page = parseInt(req.query.page) - 1 || 0;
-      const limit = parseInt(req.query.limit) || 9;
-      let date = req.query.date || "";
-      let category = req.query.category || "All";
-      let type = req.query.type || "offline";
-      let name = req.query.name || "All";
+      // const limit = parseInt(req.query.limit) || 9;
+      // let date = req.query.date || "";
+      // let category = req.query.category || "All";
+      // let type = req.query.type || "offline";
+      // let name = req.query.name || "All";
 
-      const categoryOptions = await Category.find();
+      // const categoryOptions = await Category.find();
+      // const nameOptions = await Name.find();
+
+      // name === "All"
+      //   ? (name = [...nameOptions])
+      //   : (name = req.query.name.split(","));
+
+      // category === "All"
+      //   ? (category = [...categoryOptions])
+      //   : (category = req.query.category.split(","));
+
+      // const posts = await Posts.find({
+      //   $and: [
+      //     {
+      //       isModerated: true,
+      //       postDate: date,
+      //       postType: type,
+      //       postDir: [...category],
+      //       speakerName: [...name],
+      //     },
+      //   ],
+      // }).limit(limit);
+
+      // return res.status(200).json(posts);
+
+      let date = req.body.date || "";
+
+      let category = req.body.category || "All";
+      let names = req.body.names || "All";
+
+      let type = req.body.type || "All";
+
+      type === "All"
+        ? (type = ["online", "offline"])
+        : (type = req.body.type.split(","));
+
       const nameOptions = await Name.find();
 
-      name === "All"
-        ? (name = [...nameOptions])
-        : (name = req.query.name.split(","));
+      let arrName = [];
+
+      nameOptions.find((item) => {
+        arrName.push(item.name);
+      });
+
+      names === "All"
+        ? (names = [...arrName])
+        : (names = req.body.names.split(","));
+
+      const categoryOptions = await Category.find();
+
+      let arrDir = [];
+
+      categoryOptions.find((item) => {
+        arrDir.push(...item.subCategory);
+      });
 
       category === "All"
-        ? (category = [...categoryOptions])
-        : (category = req.query.category.split(","));
+        ? (category = [...arrDir])
+        : (category = req.body.category.split(","));
 
       const posts = await Posts.find({
         $and: [
           {
             isModerated: true,
-            postDate: date,
+            postDate: { $regex: date },
             postType: type,
-            postDir: [...category],
-            speakerName: [...name],
+            postInnerDir: category,
+            speakerName: names,
           },
         ],
-      }).limit(limit);
+      });
 
-      return res.status(200).json(posts);
+      return res.status(201).json(posts);
     } catch (error) {
       console.log(error.message);
       res.status(500).json({ error: true, message: "Internal server error" });
@@ -117,7 +166,7 @@ module.exports = {
       res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
-  GET_MAIN_CATEGORIES: async (req, res) => {
+  GET_CATEGORIES: async (req, res) => {
     try {
       const categories = await Category.find();
 
@@ -126,9 +175,18 @@ module.exports = {
       res.status(500).json({ error: true, message: "Internal server error" });
     }
   },
+  GET_NAMES: async (req, res) => {
+    try {
+      const names = await Name.find();
+
+      return res.status(200).json(names);
+    } catch (error) {
+      res.status(500).json({ error: true, message: "Internal server error" });
+    }
+  },
   ADD_POST: async (req, res) => {
     try {
-      const {
+      let {
         postDate,
         postTime,
         postDir,
@@ -142,7 +200,13 @@ module.exports = {
         postTitle,
         postDesc,
         postText,
+        postAuthor,
+        firmTitle,
       } = req.body;
+
+      firmTitle = firmTitle ? firmTitle : "";
+      postLink = postLink ? postLink : "";
+      speakerTelNum2 = speakerTelNum2 ? speakerTelNum2 : "";
 
       const { name, size, mv } = req.files.postImg;
 
@@ -178,13 +242,16 @@ module.exports = {
           options
         );
         if (!result) {
-          return res.status(500).json("Internal server error");
+          return res.status(500).json("Internal server error uploading image");
         }
         // console.log(result);
         // return result.public_id;
       } catch (error) {
         // console.log(error.message);
-        res.status(500).json({ error: true, message: "Internal server error" });
+        return res.status(500).json({
+          error: true,
+          message: "Internal server error uploading image",
+        });
       }
 
       const postImgUrl = result?.secure_url;
@@ -211,14 +278,56 @@ module.exports = {
         postTitle,
         postDesc,
         postText,
+        postAuthor,
       });
+
+      const selectSpeaker = await Name.findOne({ name: speakerName });
+
+      if (!selectSpeaker) {
+        const newSpeaker = Name({
+          name: speakerName,
+        });
+
+        await newSpeaker.save();
+      }
 
       await newPost.save();
 
       return res.status(201).json("Post sent to the moderation");
     } catch (error) {
       console.log(error.message);
-      res.status(500).json({ error: true, message: "Internal server error" });
+      return res
+        .status(500)
+        .json({ error: true, message: "Internal server error" });
+    }
+  },
+  ADD_COMMENT: async (req, res) => {
+    try {
+      const { commentText, id } = req.body;
+
+      const newComment = await Comment({
+        commentText,
+        postId: id,
+      });
+
+      await newComment.save();
+
+      return res.status(201).json("Your comment added");
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: true, message: "Internal server error" });
+    }
+  },
+  GET_COMMENTS: async (req, res) => {
+    try {
+      const comments = await Comment.find({ postId: req.params.id });
+
+      return res.status(200).json(comments);
+    } catch (error) {
+      return res
+        .status(500)
+        .json({ error: true, message: "Internal server error" });
     }
   },
   MODERATE_POSTS: async (req, res) => {
