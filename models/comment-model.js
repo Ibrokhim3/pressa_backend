@@ -10,6 +10,12 @@ const commentSchema = new mongoose.Schema({
     required: true,
   },
   time: { type: Date, default: Date.now },
+  reply: [
+    {
+      replyText: { type: String },
+      time: { type: Date, default: Date.now },
+    },
+  ],
 });
 
 const Comment = mongoose.model("comment", commentSchema);

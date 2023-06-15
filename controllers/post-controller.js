@@ -31,7 +31,7 @@ module.exports = {
     }
   },
   GET_ACTIVE_POSTS: async (req, res) => {
-    const limit = parseInt(req.query.limit) || 9;
+    const limit = parseInt(req.query.limit);
     const search = req.query.search || "";
     // let category = req.query.category || "All";
     // let date = req.query.date || "";
@@ -312,16 +312,35 @@ module.exports = {
 
       await newComment.save();
 
-      return res.status(201).json("Your comment added");
+      return res.status(201).json("Your comment was added");
     } catch (error) {
       return res
         .status(500)
         .json({ error: true, message: "Internal server error" });
     }
   },
+  ADD_REPLY: async (req, res) => {
+    try {
+      const { replyText, id, commentId } = req.body;
+
+      await Comment.updateOne(
+        { _id: commentId },
+        { $push: { reply: { replyText } } }
+      );
+
+      return res.status(201).json("Your reply-message was added");
+    } catch (error) {
+      console.log(error);
+      return res
+        .status(500)
+        .json({ error: true, message: "Internal server error (Reply)" });
+    }
+  },
   GET_COMMENTS: async (req, res) => {
     try {
-      const comments = await Comment.find({ postId: req.params.id });
+      const comments = await Comment.find({ postId: req.headers.id }).limit(
+        req.headers.limit
+      );
 
       return res.status(200).json(comments);
     } catch (error) {

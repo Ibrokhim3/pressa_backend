@@ -4,6 +4,7 @@ const {
   userValidate,
   postValidate,
   commentValidate,
+  replyValidate,
 } = require("../middlewares/validation-middleware");
 const { verifyToken } = require("../middlewares/auth-middleware");
 
@@ -29,8 +30,10 @@ router.post("/moderate-post", postCtr.MODERATE_POSTS);
 
 //comments
 
-router.get("/get-comments", commentValidate, postCtr.GET_COMMENTS);
+router.get("/get-comments", postCtr.GET_COMMENTS);
 
 router.post("/add-comment", commentValidate, postCtr.ADD_COMMENT);
+
+router.post("/add-reply-to-comment", replyValidate, postCtr.ADD_REPLY);
 
 module.exports = router;
