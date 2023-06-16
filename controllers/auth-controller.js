@@ -14,7 +14,12 @@ const SIGNUP = async (req, res) => {
 
     const hashedPsw = await bcrypt.hash(password, 12);
 
-    let newUser = await User({ login, password: hashedPsw, adminName });
+    let newUser = await User({
+      login,
+      password: hashedPsw,
+      adminName,
+      userRole: "user",
+    });
 
     await newUser.save();
 
@@ -36,9 +41,13 @@ const LOGIN = async (req, res) => {
 
     if (!comparePsw) return res.status(401).json("Invalid password!");
 
-    const token = jwt.sign({ user_id: user._id }, process.env.SECRET_KEY, {
-      expiresIn: process.env.JWT_TIME,
-    });
+    const token = jwt.sign(
+      { user_id: user._id, userRole: user.userRole },
+      process.env.SECRET_KEY,
+      {
+        expiresIn: process.env.JWT_TIME,
+      }
+    );
 
     res.status(201).json({ token, msg: "You're logged in" });
   } catch (error) {
