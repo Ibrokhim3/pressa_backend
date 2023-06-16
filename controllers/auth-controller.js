@@ -41,18 +41,22 @@ const LOGIN = async (req, res) => {
 
     if (!comparePsw) return res.status(401).json("Invalid password!");
 
+    const userRole = user.userRole;
+
     const token = jwt.sign(
-      { user_id: user._id, userRole: user.userRole },
+      { user_id: user._id, userRole },
       process.env.SECRET_KEY,
       {
         expiresIn: process.env.JWT_TIME,
       }
     );
 
-    res.status(201).json({ token, msg: "You're logged in" });
+    res.status(201).json({ token, userRole, msg: "You're logged in" });
   } catch (error) {
     console.log(error.message);
-    res.status(500).json({ error: true, message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ error: true, message: "Internal server error" });
   }
 };
 

@@ -10,11 +10,17 @@ module.exports.verifyToken = async (req, res, next) => {
 
     const userData = jwt.verify(token, process.env.SECRET_KEY);
 
-    if (userData) {
+    const userRole = userData.userRole;
+
+    if (userData && userRole === "admin") {
       return next();
     }
-    res.status(404).json("Token doesn't exist or you are not authorized!");
+    return res
+      .status(404)
+      .json("Token doesn't exist or you are not authorized!");
   } catch (error) {
-    res.status(500).json({ error: true, message: "Internal server error" });
+    return res
+      .status(500)
+      .json({ error: true, message: "Internal server error (token)" });
   }
 };
