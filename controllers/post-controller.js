@@ -33,6 +33,7 @@ module.exports = {
   GET_ACTIVE_POSTS: async (req, res) => {
     const limit = parseInt(req.query.limit);
     const search = req.query.search || "";
+    let sort = req.query.sort || "asc";
     // let category = req.query.category || "All";
     // let date = req.query.date || "";
     // let sort = req.query.sort || "asc";
@@ -49,7 +50,9 @@ module.exports = {
         postTitle: { $regex: search, $options: "i" },
         // postDate: { $regex: date },
         // postDir: [...category],
-      }).limit(limit);
+      })
+        .sort({ postDate: sort })
+        .limit(limit);
       // .sort({ postDate: sort })
       return res.status(200).json(posts);
     } catch (error) {
